@@ -1,0 +1,10 @@
+# Local Android SDK and machine-specific Android Studio settings
+/.android-sdk/
+/local.properties
+/.gradle/
+/.idea/
+
+# Build output
+**/build/
+*.iml
+
