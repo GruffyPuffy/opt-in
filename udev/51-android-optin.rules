@@ -1,0 +1,3 @@
+# Allow the opt-in developer's OnePlus 13R (USB vendor 22d9, product 2769)
+# to be accessed by ADB without changing device permissions manually.
+SUBSYSTEM=="usb", ATTR{idVendor}=="22d9", ATTR{idProduct}=="2769", MODE="0660", GROUP="plugdev", TAG+="uaccess"
