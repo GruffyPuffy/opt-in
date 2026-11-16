@@ -9,7 +9,9 @@ class CountryCallScreeningService : CallScreeningService() {
         val block = callDetails.callDirection == Call.Details.DIRECTION_INCOMING &&
             !CallRules.isAllowed(this, number)
 
-        if (block) CallRules.recordBlocked(this, number)
+        if (callDetails.callDirection == Call.Details.DIRECTION_INCOMING) {
+            CallRules.recordCall(this, number, block)
+        }
 
         val response = CallResponse.Builder()
             .setDisallowCall(block)

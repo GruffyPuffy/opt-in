@@ -12,6 +12,9 @@ internal object CallRules {
     private const val ALLOWED_COUNTRIES = "allowed_countries"
     private const val ALLOWED_NUMBERS = "allowed_numbers"
     private const val BLOCKED = "blocked_calls"
+    private const val CALL_EVENTS = "call_events"
+    private const val SHOW_ALL_CALLS = "show_all_calls"
+    private const val MAX_CALL_EVENTS = 200
     private val phoneUtil = PhoneNumberUtil.getInstance()
 
     val countries: List<Country> by lazy {
@@ -78,16 +81,50 @@ internal object CallRules {
     fun blockedCalls(context: Context): List<String> =
         prefs(context).getStringSet(BLOCKED, emptySet())?.toList()?.sortedDescending() ?: emptyList()
 
-    fun recordBlocked(context: Context, raw: String) {
+    data class CallEvent(val timestamp: Long, val number: String, val blocked: Boolean)
+
+    fun callEvents(context: Context): List<CallEvent> {
+        val saved = prefs(context).getStringSet(CALL_EVENTS, emptySet()).orEmpty()
+        if (saved.isNotEmpty()) {
+            return saved.mapNotNull { value ->
+                val parts = value.split('|', limit = 3)
+                val timestamp = parts.getOrNull(0)?.toLongOrNull() ?: return@mapNotNull null
+                val blocked = parts.getOrNull(1)?.toBooleanStrictOrNull() ?: return@mapNotNull null
+                val number = parts.getOrNull(2) ?: return@mapNotNull null
+                CallEvent(timestamp, number, blocked)
+            }.sortedByDescending { it.timestamp }
+        }
+        // Keep blocked calls saved by older app versions visible after upgrading.
+        return blockedCalls(context).mapNotNull { value ->
+            val parts = value.split('|', limit = 2)
+            CallEvent(parts.firstOrNull()?.toLongOrNull() ?: return@mapNotNull null,
+                parts.getOrNull(1) ?: return@mapNotNull null, true)
+        }.sortedByDescending { it.timestamp }
+    }
+
+    fun showAllCalls(context: Context): Boolean =
+        prefs(context).getBoolean(SHOW_ALL_CALLS, false)
+
+    fun setShowAllCalls(context: Context, show: Boolean) {
+        prefs(context).edit().putBoolean(SHOW_ALL_CALLS, show).apply()
+    }
+
+    fun recordCall(context: Context, raw: String, blocked: Boolean) {
         val home = homeRegion(context) ?: return
         val number = normalize(raw, home) ?: return
-        val events = blockedCalls(context).take(199).toMutableSet()
-        events.add("${System.currentTimeMillis()}|$number")
-        prefs(context).edit().putStringSet(BLOCKED, events).apply()
+        val events = callEvents(context).take(MAX_CALL_EVENTS - 1).map {
+            "${it.timestamp}|${it.blocked}|${it.number}"
+        }.toMutableSet()
+        events.add("${System.currentTimeMillis()}|$blocked|$number")
+        prefs(context).edit().putStringSet(CALL_EVENTS, events).apply()
+    }
+
+    fun recordBlocked(context: Context, raw: String) {
+        recordCall(context, raw, true)
     }
 
     fun clearBlocked(context: Context) {
-        prefs(context).edit().remove(BLOCKED).apply()
+        prefs(context).edit().remove(BLOCKED).remove(CALL_EVENTS).apply()
     }
 
     private fun normalize(raw: String, homeRegion: String): String? {

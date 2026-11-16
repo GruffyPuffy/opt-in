@@ -10,12 +10,16 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import android.graphics.Paint
+import java.text.DateFormat
+import java.util.Date
 
 class MainActivity : Activity() {
     private lateinit var page: LinearLayout
@@ -116,18 +120,27 @@ class MainActivity : Activity() {
             addText("Select and save a home country to turn on call screening.")
         }
 
-        addText("Blocked calls", 20f, true)
-        val events = CallRules.blockedCalls(this)
-        if (events.isEmpty()) addText("No blocked calls yet.")
-        events.forEach { event ->
-            val split = event.split('|', limit = 2)
-            val number = split.getOrElse(1) { event }
-            addRow(number, "Allow number") {
-                CallRules.addAllowedNumber(this, number)
+        addText("Call activity", 20f, true)
+        val showAll = CheckBox(this).apply {
+            text = "Show full call log"
+            isChecked = CallRules.showAllCalls(this@MainActivity)
+            setOnCheckedChangeListener { _, checked ->
+                CallRules.setShowAllCalls(this@MainActivity, checked)
                 render()
             }
         }
-        if (events.isNotEmpty()) addButton("Clear blocked calls") { CallRules.clearBlocked(this); render() }
+        page.addView(showAll, matchWidth())
+        val callEvents = CallRules.callEvents(this)
+        val visibleEvents = if (showAll.isChecked) callEvents else callEvents.filter { it.blocked }
+        if (visibleEvents.isEmpty()) addText(if (showAll.isChecked) "No screened calls yet." else "No blocked calls yet.")
+        visibleEvents.forEach { event ->
+            val time = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
+                .format(Date(event.timestamp))
+            val status = if (event.blocked) "BLOCKED" else "ALLOWED"
+            addCallRow("$status · ${event.number}\n$time", event.number, event.blocked)
+        }
+        if (callEvents.isNotEmpty()) addButton("Clear call activity") { CallRules.clearBlocked(this); render() }
+        addText("Up to 200 recent calls screened by opt-in are kept here. Android may not send calls from your contacts to the screening service.", 14f)
         addText("Your rules stay on this phone. Calls with no identifiable country are allowed.", 14f)
     }
 
@@ -180,6 +193,26 @@ class MainActivity : Activity() {
         if (actionLabel.isNotEmpty()) {
             row.addView(Button(this).apply { text = actionLabel; setOnClickListener { action() } })
         }
+        page.addView(row, matchWidth())
+    }
+
+    private fun addCallRow(value: String, number: String, blocked: Boolean) {
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        row.addView(TextView(this).apply {
+            text = value
+            textSize = this@MainActivity.textSize
+            if (blocked) paintFlags = paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+        }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        if (blocked) row.addView(Button(this).apply {
+            text = "Allow number"
+            setOnClickListener {
+                CallRules.addAllowedNumber(this@MainActivity, number)
+                render()
+            }
+        })
         page.addView(row, matchWidth())
     }
 
