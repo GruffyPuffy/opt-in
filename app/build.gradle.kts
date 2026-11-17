@@ -16,8 +16,8 @@ android {
         applicationId = "se.optin"
         minSdk = 29
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
     }
 
     kotlinOptions {
@@ -33,5 +33,5 @@ tasks.register<Copy>("copyDebugApk") {
     dependsOn("assembleDebug")
     from(layout.buildDirectory.file("outputs/apk/debug/app-debug.apk"))
     into(layout.buildDirectory.dir("outputs/opt-in"))
-    rename { "opt-in-v1.0-debug.apk" }
+    rename { "opt-in-v1.1-debug.apk" }
 }

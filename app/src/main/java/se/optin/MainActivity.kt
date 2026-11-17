@@ -43,6 +43,8 @@ class MainActivity : Activity() {
         setContentView(ScrollView(this).apply { addView(page) })
 
         addText("opt-in", 28f, true)
+        val version = packageManager.getPackageInfo(packageName, 0).versionName ?: "unknown"
+        addText("Version $version", 13f)
         addText("Choose your home country. Calls from it are always allowed; other countries are blocked unless you allow them.")
 
         val countries = CallRules.countries
@@ -130,6 +132,16 @@ class MainActivity : Activity() {
             }
         }
         page.addView(showAll, matchWidth())
+        val lastCheck = CallRules.lastScreeningCheck(this)
+        if (lastCheck == null) {
+            addText("No incoming calls have reached opt-in yet.", 14f)
+        } else {
+            val time = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
+                .format(Date(lastCheck.timestamp))
+            val saved = if (lastCheck.activitySaved) "activity saved" else "number could not be saved"
+            val numberStatus = if (lastCheck.numberPresent) "number provided" else "no number provided"
+            addText("Last screening check: ${lastCheck.outcome.lowercase()} · $time\n$numberStatus · $saved", 14f)
+        }
         val callEvents = CallRules.callEvents(this)
         val visibleEvents = if (showAll.isChecked) callEvents else callEvents.filter { it.blocked }
         if (visibleEvents.isEmpty()) addText(if (showAll.isChecked) "No screened calls yet." else "No blocked calls yet.")

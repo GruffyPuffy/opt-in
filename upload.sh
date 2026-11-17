@@ -3,7 +3,7 @@ set -euo pipefail
 
 PROJECT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 ADB="$PROJECT_DIR/.android-sdk/platform-tools/adb"
-APK="$PROJECT_DIR/app/build/outputs/opt-in/opt-in-v1.0-debug.apk"
+APK="$PROJECT_DIR/app/build/outputs/opt-in/opt-in-v1.1-debug.apk"
 
 if [[ ! -x "$ADB" ]]; then
     echo "ADB is missing from .android-sdk/platform-tools/." >&2

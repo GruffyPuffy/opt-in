@@ -8,6 +8,6 @@ Phone numbers are parsed locally with Google's libphonenumber. Calls with privat
 
 The Android command-line tools, JDK 17, API 35 platform, build tools, and platform tools are installed locally under `.android-sdk/` and excluded from Git. `local.properties` points Android builds to this SDK.
 
-Run `./build.sh` to create `app/build/outputs/opt-in/opt-in-v1.0-debug.apk`. Connect one Android device with USB debugging enabled and accepted, then run `./upload.sh` to install and open the APK. Both scripts use the local tools in `.android-sdk/`.
+Run `./build.sh` to create `app/build/outputs/opt-in/opt-in-v1.1-debug.apk`. Connect one Android device with USB debugging enabled and accepted, then run `./upload.sh` to install and open the APK. Both scripts use the local tools in `.android-sdk/`.
 
 The app requests Android's Call screening role from its main screen; approve that system prompt to enable filtering.
